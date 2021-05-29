@@ -1,15 +1,7 @@
-module Lib
-  ( someFunc,
-    train,
-    --   predict,
-    --   elemSubtract,
-    --   initWeights,
-    --   run,
-  )
-where
+module Lib () where
 
-import Control.Monad (replicateM, when)
-import System.Random (getStdRandom, randomR)
+-- import Control.Monad (replicateM, when)
+-- import System.Random (getStdRandom, randomR)
 
 type Vect = [Float]
 
@@ -24,11 +16,11 @@ predict w x
   | dot w x > 0 = 1
   | otherwise = 0
 
-predEpoch ::
+predictEpoch ::
   Vect -> -- x - Weights
   [Vect] -> -- curried - An epoc of input vectors
   [Float] -- A guess for each input in the epoch
-predEpoch w = map (predict w)
+predictEpoch w = map (predict w)
 
 stocTrain ::
   Vect -> -- w - Weights
@@ -61,15 +53,7 @@ dot :: Vect -> Vect -> Float
 dot x y = sum (zipWith (*) x y)
 
 elemSubtract :: Vect -> Vect -> Vect
-elemSubtract (a : as) (b : bs) = a - b : elemSubtract as bs
-elemSubtract _ _ = []
+elemSubtract = zipWith (-)
 
 elemAdd :: Vect -> Vect -> Vect
-elemAdd (a : as) (b : bs) = a + b : elemAdd as bs
-elemAdd _ _ = []
-
--- initWeights :: Int -> IO [Float]
--- initWeights 0 = pure []
--- initWeights numWeights = do
---   let interval = randomR (-0.5, 0.5)
---   replicateM numWeights (getStdRandom interval)
+elemAdd = zipWith (+)
