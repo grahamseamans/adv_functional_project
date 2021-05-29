@@ -1,13 +1,14 @@
 module Lib
   ( someFunc,
-  --   predict,
-  --   elemSubtract,
-  --   initWeights,
-  --   run,
+    train,
+    --   predict,
+    --   elemSubtract,
+    --   initWeights,
+    --   run,
   )
 where
 
-import Control.Monad (replicateM)
+import Control.Monad (replicateM, when)
 import System.Random (getStdRandom, randomR)
 
 type Vect = [Float]
@@ -15,52 +16,46 @@ type Vect = [Float]
 someFunc :: IO ()
 someFunc = putStrLn "yeet"
 
-predict :: Vect -> Vect -> Int
-predict x w
-  | dot x w > 0 = 1
+predict ::
+  Vect -> -- Weights
+  Vect -> -- Input Vector
+  Float -- Guess
+predict w x
+  | dot w x > 0 = 1
   | otherwise = 0
 
--- learn :: Inputs -> Weights -> Threshold -> Float -> Guess -> Weights
--- learn inputs weights threshold label guess =
---   elemSubtract weights delta
---   where
---     delta = map (lRate *) slope
---     slope = map (error *) inputs
---     error = label - guess
---     lRate = 0.1
+predEpoch ::
+  Vect -> -- x - Weights
+  [Vect] -> -- curried - An epoc of input vectors
+  [Float] -- A guess for each input in the epoch
+predEpoch w = map (predict w)
 
--- getDelta :: Inputs -> Weights -> Float -> Guess -> Delta
--- getDelta inputs weights label guess =
---   delta
---   where
---     delta = map (lRate *) slope
---     slope = map (error *) inputs
---     error = label - guess
---     lRate = 0.1
+stocTrain ::
+  Vect -> -- w - Weights
+  Vect -> -- x - Single input vector
+  Float -> -- l - label
+  Vect -- Trained Weights
+stocTrain w x l = elemSubtract w (map (0.1 * error *) x)
+  where
+    error = predict w x - l
 
--- processEpoch :: [Inputs] -> [Float] -> Weights -> Weights
--- processEpoch inputs labels weights = elemSubtract weights delta
---   where
---     delta = elemDivide summedDeltas [fromIntegral len ..]
---     summedDeltas = foldl elemAdd [] (zipWith4 getDelta inputs repeatedWeights labels guesses)
---     guesses = zipWith predict repeatedWeights inputs
---     repeatedWeights = replicate len weights
---     len = length labels
+runEpoch ::
+  [Vect] -> -- x - An epoch of inputs
+  Vect -> -- l - An epoch of labels
+  Vect -> -- w - Weights
+  Vect -- Weights
+runEpoch [] [] w = w
+runEpoch (x : xs) (l : ls) w = runEpoch xs ls (stocTrain w x l)
 
--- run :: Int -> [Inputs] -> [Float] -> Weights -> Weights
--- run times inputs labels weights
---   | times == 0 = weights
---   | otherwise = run (times - 1) inputs labels (processEpoch inputs labels weights)
-
--- initWeights :: Int -> IO [Float]
--- initWeights 0 = pure []
--- initWeights numWeights = do
---   let interval = randomR (-0.5, 0.5)
---   replicateM numWeights (getStdRandom interval)
-
--- zipWith4 :: (a -> b -> c -> d -> e) -> [a] -> [b] -> [c] -> [d] -> [e]
--- zipWith4 f (a : as) (b : bs) (c : cs) (d : ds) = f a b c d : zipWith4 f as bs cs ds
--- zipWith4 _ _ _ _ _ = []
+train ::
+  Int -> -- t - number of epochs to train on
+  [Vect] -> -- x - An epoch of inputs
+  Vect -> -- l - An epoch of labels
+  Vect -> -- w - Weights
+  Vect -- Weights
+train t xs ls w
+  | t == 0 = w
+  | otherwise = train (t - 1) xs ls (runEpoch xs ls w)
 
 dot :: Vect -> Vect -> Float
 dot x y = sum (zipWith (*) x y)
@@ -72,3 +67,9 @@ elemSubtract _ _ = []
 elemAdd :: Vect -> Vect -> Vect
 elemAdd (a : as) (b : bs) = a + b : elemAdd as bs
 elemAdd _ _ = []
+
+-- initWeights :: Int -> IO [Float]
+-- initWeights 0 = pure []
+-- initWeights numWeights = do
+--   let interval = randomR (-0.5, 0.5)
+--   replicateM numWeights (getStdRandom interval)
