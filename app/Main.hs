@@ -1,15 +1,11 @@
 module Main where
 
 -- import Lib (train)
-
--- import Data.Binary.Strict.Get as BinGet
-
--- import Lib (train)
-
--- import Data.Binary.Strict.Get as BinGet
--- import Control.Monad (liftM2, when)
--- import qualified Data.ByteString.Lazy as BL
--- import Data.Word
+import Control.Monad (liftM2)
+import qualified Data.ByteString.Lazy as BL
+import qualified Data.Vector as V
+import Data.Word
+import Text.CSV
 
 type Vect = [Float]
 
@@ -66,19 +62,45 @@ elemAdd = zipWith (+)
 -- outer :: Vect -> Vect -> Vect
 -- outer = liftM2 (*)
 
--- readHeader :: BinGet.Get (Word8, Word8)
--- readHeader = do
---   _ <- getword16be
---   dataType <- getWord8be
---   dimensions <- getWord8be
---   return (dataType, dimensions)
+-- https://hackage.haskell.org/package/linear-1.21.5/docs/src/Linear.Vector.html#outer
+outer :: Vect -> Vect -> [Vect]
+outer a b = fmap (\x -> fmap (x *) b) a
+
+-- csvToLists :: [[String]] -> [Vect]
+-- csvToLists s = trainedWeights
+--   where
+--     (labels, inputs) = labelInputSplit (map (map read) s)
+--     trainedWeights = train 100 inputs labels [[0 ..]]
+
+-- labelInputSplit :: [[Float]] -> ([Float], [[Float]])
+-- labelInputSplit xs = (heads xs, tails xs)
+
+-- heads :: [[Float]] -> [Float]
+-- heads (x : xs) = head x : heads xs
+
+-- tails :: [[Float]] -> [[Float]]
+-- tails (x : xs) = tail x : tails xs
 
 main :: IO ()
 main = do
-  -- contents <- BL.readFile "./data/train-labels-idx1-ubyte"
-  -- BL.writeFile "test_write" $ runGet readHeader contents
+  -- file <- decodeIDXFile "./data/train-labels-idx1-ubyte"
+  -- case file of
+  --   Nothing -> print "error"
+  --   Just idx -> print idx
 
-  -- print $ outer [1, 2] [3, 4]
+  -- test_csv <- parseCSVFromFile "test_read.csv"
+  -- case test_csv of
+  --   Left err -> print err
+  --   Right csv -> print (csvToLists csv)
+
+  -- extractColumn :: Read t => CSV -> Int -> [t]
+  -- extractColumn csv n =
+  --   [ read (record !! n) | record <- csv, length record > n, record /= [""]
+  --   ]
+
+  -- contents <- BL.readFile "./data/train-labels-idx1-ubyte"
+  -- let header = BL.take 4 contents
+  -- BL.writeFile "test_write" header
 
   let inputs = [[0, 0, 1], [0, 1, 1], [1, 0, 1], [1, 1, 1]]
   let labels = [0, 0, 0, 1]

@@ -34,7 +34,9 @@ library
       base >=4.7 && <5
     , binary
     , bytestring
+    , csv
     , random
+    , vector
   default-language: Haskell2010
 
 executable project-exe
@@ -48,8 +50,10 @@ executable project-exe
       base >=4.7 && <5
     , binary
     , bytestring
+    , csv
     , project
     , random
+    , vector
   default-language: Haskell2010
 
 test-suite project-test
@@ -64,6 +68,8 @@ test-suite project-test
       base >=4.7 && <5
     , binary
     , bytestring
+    , csv
     , project
     , random
+    , vector
   default-language: Haskell2010

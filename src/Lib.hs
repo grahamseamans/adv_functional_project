@@ -1,4 +1,4 @@
-module Lib () where
+module Lib where
 
 -- import Control.Monad (replicateM, when)
 -- import System.Random (getStdRandom, randomR)
