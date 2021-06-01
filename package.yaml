@@ -26,7 +26,7 @@ dependencies:
   - binary
   - csv
   - vector
-
+  - utility-ht
 library:
   source-dirs: src
 

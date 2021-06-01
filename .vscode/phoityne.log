@@ -5,3 +5,8 @@
 2021-05-28 17:23:02.141451000000 [30436(ThreadId 12)] WARNING REQUEST - unsupported request command. {"command":"stepOut","arguments":{"threadId":0},"type":"request","seq":336}
 2021-05-29 12:35:19.272741000000 [36519(ThreadId 12)] WARNING REQUEST - unsupported request command. {"command":"stepOut","arguments":{"threadId":0},"type":"request","seq":347}
 2021-05-29 12:35:20.119663000000 [36519(ThreadId 12)] WARNING REQUEST - unsupported request command. {"command":"stepOut","arguments":{"threadId":0},"type":"request","seq":348}
+2021-06-01 16:29:27.478719000000 [79238(ThreadId 12)] WARNING REQUEST - unsupported request command. {"command":"stepOut","arguments":{"threadId":0},"type":"request","seq":100}
+2021-06-01 16:29:28.395995000000 [79238(ThreadId 12)] WARNING REQUEST - unsupported request command. {"command":"stepOut","arguments":{"threadId":0},"type":"request","seq":101}
+2021-06-01 16:29:28.969018000000 [79238(ThreadId 12)] WARNING REQUEST - unsupported request command. {"command":"stepOut","arguments":{"threadId":0},"type":"request","seq":102}
+2021-06-01 16:29:29.279442000000 [79238(ThreadId 12)] WARNING REQUEST - unsupported request command. {"command":"stepOut","arguments":{"threadId":0},"type":"request","seq":103}
+2021-06-01 16:29:29.640727000000 [79238(ThreadId 12)] WARNING REQUEST - unsupported request command. {"command":"stepOut","arguments":{"threadId":0},"type":"request","seq":104}

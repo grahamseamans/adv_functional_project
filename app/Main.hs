@@ -3,30 +3,29 @@ module Main where
 -- import Lib (train)
 import Control.Monad (liftM2)
 import qualified Data.ByteString.Lazy as BL
+import Data.List
 import qualified Data.Vector as V
 import Data.Word
 import Text.CSV
 
-type Vect = [Float]
+type Vect = [Double]
 
 predict ::
-  Vect -> -- Weights
-  Vect -> -- Input Vector
-  Float -- Guess
-predict w x
-  | dot w x > 0 = 1
-  | otherwise = 0
+  Vect -> -- curried - Weights
+  Vect -> -- curried - Input Vector
+  Double -- Guess
+predict = dot
 
 predictEpoch ::
   Vect -> -- x - Weights
   [Vect] -> -- curried - An epoch of input vectors
-  [Float] -- A guess for each input in the epoch
+  [Double] -- A guess for each input in the epoch
 predictEpoch w = map (predict w)
 
 stocTrain ::
   Vect -> -- w - Weights
   Vect -> -- x - Single input vector
-  Float -> -- l - label
+  Double -> -- l - label
   Vect -- Trained Weights
 stocTrain w x l = elemSubtract w (map (0.1 * error *) x)
   where
@@ -37,8 +36,8 @@ trainEpoch ::
   Vect -> -- l - An epoch of labels
   Vect -> -- w - Weights
   Vect -- Weights
-trainEpoch [] [] w = w
 trainEpoch (x : xs) (l : ls) w = trainEpoch xs ls (stocTrain w x l)
+trainEpoch [] [] w = w
 
 train ::
   Int -> -- t - number of epochs to train on
@@ -50,7 +49,7 @@ train t xs ls w
   | t == 0 = w
   | otherwise = train (t - 1) xs ls (trainEpoch xs ls w)
 
-dot :: Vect -> Vect -> Float
+dot :: Vect -> Vect -> Double
 dot x y = sum (zipWith (*) x y)
 
 elemSubtract :: Vect -> Vect -> Vect
@@ -59,44 +58,28 @@ elemSubtract = zipWith (-)
 elemAdd :: Vect -> Vect -> Vect
 elemAdd = zipWith (+)
 
--- outer :: Vect -> Vect -> Vect
--- outer = liftM2 (*)
+-- csvToTrainedWeights :: [[String]] -> [Vect]
+-- csvToTrainedWeights :: [[String]] -> [Double]
+csvToTrainedWeights :: [[String]] -> [Double]
+csvToTrainedWeights s = trainedWeights
+  where
+    (labels, unscaledInputs) = labelInputSplit (map (map read) (init s))
+    trainedWeights = train 1 (scaleInput unscaledInputs) labels [0 ..]
 
--- https://hackage.haskell.org/package/linear-1.21.5/docs/src/Linear.Vector.html#outer
-outer :: Vect -> Vect -> [Vect]
-outer a b = fmap (\x -> fmap (x *) b) a
+scaleInput :: [[Double]] -> [[Double]]
+scaleInput = map (map (/ 255))
 
--- csvToLists :: [[String]] -> [Vect]
--- csvToLists s = trainedWeights
---   where
---     (labels, inputs) = labelInputSplit (map (map read) s)
---     trainedWeights = train 100 inputs labels [[0 ..]]
-
--- labelInputSplit :: [[Float]] -> ([Float], [[Float]])
--- labelInputSplit xs = (heads xs, tails xs)
-
--- heads :: [[Float]] -> [Float]
--- heads (x : xs) = head x : heads xs
-
--- tails :: [[Float]] -> [[Float]]
--- tails (x : xs) = tail x : tails xs
+labelInputSplit :: [[Double]] -> ([Double], [[Double]])
+labelInputSplit xs = (head t, transpose (tail t))
+  where
+    t = transpose xs
 
 main :: IO ()
 main = do
-  -- file <- decodeIDXFile "./data/train-labels-idx1-ubyte"
-  -- case file of
-  --   Nothing -> print "error"
-  --   Just idx -> print idx
-
-  -- test_csv <- parseCSVFromFile "test_read.csv"
+  -- test_csv <- parseCSVFromFile "./data/mnist_test.csv"
   -- case test_csv of
   --   Left err -> print err
-  --   Right csv -> print (csvToLists csv)
-
-  -- extractColumn :: Read t => CSV -> Int -> [t]
-  -- extractColumn csv n =
-  --   [ read (record !! n) | record <- csv, length record > n, record /= [""]
-  --   ]
+  --   Right csv -> print (csvToTrainedWeights csv)
 
   -- contents <- BL.readFile "./data/train-labels-idx1-ubyte"
   -- let header = BL.take 4 contents
