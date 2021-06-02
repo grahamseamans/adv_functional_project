@@ -2,57 +2,75 @@ module Main where
 
 -- import Lib (train)
 import Data.List
--- import qualified Data.vector as V
 import Numeric.LinearAlgebra
 import Text.CSV
 
+{-
+Sooooooooooooo
+What do I need to do
+  Need to make the output a vector
+  make the weights a matrix
+  make the learning stage be an outer product thats then
+  subracted from the weights
+
+  I need to implement sigmoid?
+-}
+
 predict ::
-  Vector Double -> -- curried - Weights
-  Vector Double -> -- curried - Input vectoror
-  Double -- Guess
-predict w x = w <.> x
+  Matrix Double -> -- curried - Weights
+  Vector Double -> -- curried - Input vector
+  Vector Double -- Guess
+predict w x = cmap sigmoid w #> x
 
 predictEpoch ::
-  Vector Double -> -- w - Weights
-  [Vector Double] -> -- curried - An epoch of input vectorors
-  [Double] -- A guess for each input in the epoch
-predictEpoch w = map (`dot` w)
+  Matrix Double -> -- w - Weights
+  [Vector Double] -> -- x - An epoch of input vectorors
+  [Vector Double] -- A guess for each input in the epoch
+predictEpoch w x = map (cmap sigmoid) (fmap (w #>) x)
+
+sigmoid :: Double -> Double
+sigmoid x = 1.0 / (1.0 + exp (negate x))
+
+validate ::
+  Matrix Double -> -- w - Weights
+  [Vector Double] -> -- x - An epoch of input vectorors
+  [Vector Double] -> -- l - An epoch of labels
+  [Int] -- A guess for each input in the epoch
+validate w x l = zipWith checkSame l (predictEpoch w x)
+
+checkSame :: Vector Double -> Vector Double -> Int
+checkSame x y
+  | maxIndex x == maxIndex y = 1
+  | otherwise = 0
 
 stocTrain ::
-  Vector Double -> -- w - Weights
+  Matrix Double -> -- w - Weights
   Vector Double -> -- x - Single input vectoror
-  Double -> -- l - label
-  Vector Double -- Trained Weights
-stocTrain w x l = w - scale (0.1 * error) x
+  Vector Double -> -- l - label
+  Matrix Double -- Trained Weights
+stocTrain w x l = w - delta
   where
     error = predict w x - l
+    sigDeriv = error * cmap (1 -) error
+    delta = scale 0.1 $ sigDeriv `outer` x
 
 trainEpoch ::
   [Vector Double] -> -- x - An epoch of inputs
-  [Double] -> -- l - An epoch of labels
-  Vector Double -> -- w - Weights
-  Vector Double -- Weights
+  [Vector Double] -> -- l - An epoch of labels
+  Matrix Double -> -- w - Weights
+  Matrix Double -- Weights
 trainEpoch (x : xs) (l : ls) w = trainEpoch xs ls (stocTrain w x l)
 trainEpoch [] [] w = w
 
 train ::
   Int -> -- t - number of epochs to train on
   [Vector Double] -> -- x - An epoch of inputs
-  [Double] -> -- l - An epoch of labels
-  Vector Double -> -- w - Weights
-  Vector Double -- Weights
+  [Vector Double] -> -- l - An epoch of labels
+  Matrix Double -> -- w - Weights
+  Matrix Double -- Weights
 train t xs ls w
   | t == 0 = w
   | otherwise = train (t - 1) xs ls (trainEpoch xs ls w)
-
--- dot :: vector -> vector -> Double
--- dot x y = sum (zipWith (*) x y)
-
--- elemSubtract :: vector -> vector -> vector
--- elemSubtract = zipWith (-)
-
--- elemAdd :: vector -> vector -> vector
--- elemAdd = zipWith (+)
 
 -- csvToTrainingPred :: [[String]] -> [Double]
 -- csvToTrainingPred s = predictEpoch trainedWeights scaledInputs
@@ -81,9 +99,20 @@ main = do
   -- BL.writeFile "test_write" header
 
   let inputs = map vector [[0, 0, 1], [0, 1, 1], [1, 0, 1], [1, 1, 1]]
-  let labels = [0, 0, 0, 1]
-  let weights = vector (replicate 3 0)
+  let labels = map vector [[0, 1], [0, 1], [0, 1], [1, 0]]
+  let weights = matrix 3 (replicate 6 0)
+  print "Initialized Weights"
+  print weights
+  print "target"
+  print labels
+  print "untrained prediction"
   print (predictEpoch weights inputs)
   let trainedWeights = train 100 inputs labels weights
-  print (predictEpoch trainedWeights inputs)
+  print "trained weights"
   print trainedWeights
+  print "target"
+  print labels
+  print "trained prediciton"
+  print (predictEpoch trainedWeights inputs)
+  print "Validate"
+  print (validate weights inputs labels)
