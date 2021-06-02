@@ -27,6 +27,8 @@ dependencies:
   - csv
   - vector
   - utility-ht
+  - hmatrix
+
 library:
   source-dirs: src
 

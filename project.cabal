@@ -35,6 +35,7 @@ library
     , binary
     , bytestring
     , csv
+    , hmatrix
     , random
     , utility-ht
     , vector
@@ -52,6 +53,7 @@ executable project-exe
     , binary
     , bytestring
     , csv
+    , hmatrix
     , project
     , random
     , utility-ht
@@ -71,6 +73,7 @@ test-suite project-test
     , binary
     , bytestring
     , csv
+    , hmatrix
     , project
     , random
     , utility-ht
