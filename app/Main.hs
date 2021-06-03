@@ -1,7 +1,11 @@
+{-# LANGUAGE DeriveDataTypeable #-}
+
 module Main where
 
--- import Lib (train)
+-- import Lib
+
 import Data.List
+import Data.Vector (snoc)
 import Numeric.LinearAlgebra
 import Text.CSV
 
@@ -31,18 +35,6 @@ predictEpoch w x = map (cmap sigmoid) (fmap (w #>) x)
 sigmoid :: Double -> Double
 sigmoid x = 1.0 / (1.0 + exp (negate x))
 
-validate ::
-  Matrix Double -> -- w - Weights
-  [Vector Double] -> -- x - An epoch of input vectorors
-  [Vector Double] -> -- l - An epoch of labels
-  [Int] -- A guess for each input in the epoch
-validate w x l = zipWith checkSame l (predictEpoch w x)
-
-checkSame :: Vector Double -> Vector Double -> Int
-checkSame x y
-  | maxIndex x == maxIndex y = 1
-  | otherwise = 0
-
 stocTrain ::
   Matrix Double -> -- w - Weights
   Vector Double -> -- x - Single input vectoror
@@ -52,67 +44,111 @@ stocTrain w x l = w - delta
   where
     error = predict w x - l
     sigDeriv = error * cmap (1 -) error
-    delta = scale 0.1 $ sigDeriv `outer` x
+    delta = scale 0.01 $ sigDeriv `outer` x
 
 trainEpoch ::
+  Matrix Double -> -- w - Weights
   [Vector Double] -> -- x - An epoch of inputs
   [Vector Double] -> -- l - An epoch of labels
-  Matrix Double -> -- w - Weights
   Matrix Double -- Weights
-trainEpoch (x : xs) (l : ls) w = trainEpoch xs ls (stocTrain w x l)
-trainEpoch [] [] w = w
+trainEpoch w (x : xs) (l : ls) = trainEpoch (stocTrain w x l) xs ls
+trainEpoch w [] [] = w
 
 train ::
   Int -> -- t - number of epochs to train on
+  Matrix Double -> -- w - Weights
   [Vector Double] -> -- x - An epoch of inputs
   [Vector Double] -> -- l - An epoch of labels
-  Matrix Double -> -- w - Weights
   Matrix Double -- Weights
-train t xs ls w
+train t w xs ls
   | t == 0 = w
-  | otherwise = train (t - 1) xs ls (trainEpoch xs ls w)
+  | otherwise = train (t - 1) (trainEpoch w xs ls) xs ls
 
--- csvToTrainingPred :: [[String]] -> [Double]
--- csvToTrainingPred s = predictEpoch trainedWeights scaledInputs
---   where
---     (labels, unscaledInputs) = labelInputSplit (map (map read) (init s))
---     scaledInputs = scaleInput unscaledInputs
---     trainedWeights = train 1 scaledInputs labels [0 ..]
+test ::
+  Matrix Double -> -- w - Weights
+  [Vector Double] -> -- x - An epoch of input vectors
+  [Vector Double] -> -- l - An epoch of labels
+  Double -- A guess for each input in the epoch
+test w x l = intDiv correct total
+  where
+    correct = sum (zipWith checkSame l (predictEpoch w x))
+    total = length l
 
--- scaleInput :: [[Double]] -> [[Double]]
--- scaleInput = map (map (/ 255))
+intDiv :: Int -> Int -> Double
+intDiv n l = fromIntegral n / fromIntegral l
 
--- labelInputSplit :: [[Double]] -> ([Double], [[Double]])
--- labelInputSplit xs = (head t, transpose (tail t))
---   where
---     t = transpose xs
+checkSame :: Vector Double -> Vector Double -> Int
+checkSame x y
+  | maxIndex x == maxIndex y = 1
+  | otherwise = 0
+
+run ::
+  [[String]] -> -- tesCSV - read csv of test data
+  [[String]] -> --  trainCSV - read csv of train data
+  Double -- correct / total
+run testCSV trainCSV = test w xTest lTest
+  where
+    (xTest, lTest) = csvToInputsLabels testCSV
+    (xTrain, lTrain) = csvToInputsLabels trainCSV
+    w = train 1 initW xTrain lTrain
+    initW = matrix 785 (replicate (785 * 10) 0)
+
+csvToTrainingPred :: [[String]] -> [Vector Double]
+csvToTrainingPred csv = predictEpoch w xs
+  where
+    w = train 1 initW xs ls
+    (xs, ls) = csvToInputsLabels csv
+    initW = matrix 785 (replicate (785 * 10) 0)
+
+csvToInputsLabels ::
+  [[String]] -> -- read csv
+  ([Vector Double], [Vector Double]) -- (x,l)
+csvToInputsLabels csv = (finInputs, oneHotLabels)
+  where
+    oneHotLabels = fmap oneHotVector rawLabels
+    finInputs = fmap vector scaledBiasedInputs
+    scaledBiasedInputs = fmap (++ [1.0]) (scaleInput rawInputs)
+    (rawLabels, rawInputs) = labelInputSplit (map (map read) (init csv))
+
+scaleInput :: [[Double]] -> [[Double]]
+scaleInput = map (map (/ 255))
+
+labelInputSplit :: [[Double]] -> ([Double], [[Double]])
+labelInputSplit xs = (head t, transpose (tail t))
+  where
+    t = transpose xs
+
+oneHotVector :: Double -> Vector Double
+oneHotVector x = vector $ replicate int 0 ++ [1] ++ replicate (9 - int) 0
+  where
+    int = round x
 
 main :: IO ()
 main = do
-  -- test_csv <- parseCSVFromFile "./data/mnist_test.csv"
-  -- case test_csv of
-  --   Left err -> print err
-  --   Right csv -> print (csvToTrainingPred csv)
+  testCSV <- parseCSVFromFile "./data/mnist_test_short.csv"
+  trainCSV <- parseCSVFromFile "./data/mnist_train_short.csv"
+  case testCSV of
+    Left err -> print err
+    Right testCSV ->
+      case trainCSV of
+        Left err -> print err
+        Right trainCSV -> print (run testCSV trainCSV)
 
-  -- contents <- BL.readFile "./data/train-labels-idx1-ubyte"
-  -- let header = BL.take 4 contents
-  -- BL.writeFile "test_write" header
-
-  let inputs = map vector [[0, 0, 1], [0, 1, 1], [1, 0, 1], [1, 1, 1]]
-  let labels = map vector [[0, 1], [0, 1], [0, 1], [1, 0]]
-  let weights = matrix 3 (replicate 6 0)
-  print "Initialized Weights"
-  print weights
-  print "target"
-  print labels
-  print "untrained prediction"
-  print (predictEpoch weights inputs)
-  let trainedWeights = train 100 inputs labels weights
-  print "trained weights"
-  print trainedWeights
-  print "target"
-  print labels
-  print "trained prediciton"
-  print (predictEpoch trainedWeights inputs)
-  print "Validate"
-  print (validate weights inputs labels)
+-- let inputs = map vector [[0, 0, 1], [0, 1, 1], [1, 0, 1], [1, 1, 1]]
+-- let labels = map vector [[0, 1], [0, 1], [0, 1], [1, 0]]
+-- let weights = matrix 3 (replicate 6 0)
+-- print "Initialized Weights"
+-- print weights
+-- print "target"
+-- print labels
+-- print "untrained prediction"
+-- print $ predictEpoch weights inputs
+-- let trainedWeights = train 100 weights inputs labels
+-- print "trained weights"
+-- print trainedWeights
+-- print "target"
+-- print labels
+-- print "trained prediciton"
+-- print $ predictEpoch trainedWeights inputs
+-- print "Test"
+-- print $ test trainedWeights inputs labels
