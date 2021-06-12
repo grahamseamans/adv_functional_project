@@ -37,6 +37,7 @@ library
     , csv
     , hmatrix
     , random
+    , state
     , utility-ht
     , vector
   default-language: Haskell2010
@@ -56,6 +57,7 @@ executable project-exe
     , hmatrix
     , project
     , random
+    , state
     , utility-ht
     , vector
   default-language: Haskell2010
@@ -76,6 +78,7 @@ test-suite project-test
     , hmatrix
     , project
     , random
+    , state
     , utility-ht
     , vector
   default-language: Haskell2010
