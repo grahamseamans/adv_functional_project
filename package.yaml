@@ -28,6 +28,7 @@ dependencies:
   - vector
   - utility-ht
   - hmatrix
+  - mtl
 
 library:
   source-dirs: src

@@ -10,3 +10,5 @@
 2021-06-01 16:29:28.969018000000 [79238(ThreadId 12)] WARNING REQUEST - unsupported request command. {"command":"stepOut","arguments":{"threadId":0},"type":"request","seq":102}
 2021-06-01 16:29:29.279442000000 [79238(ThreadId 12)] WARNING REQUEST - unsupported request command. {"command":"stepOut","arguments":{"threadId":0},"type":"request","seq":103}
 2021-06-01 16:29:29.640727000000 [79238(ThreadId 12)] WARNING REQUEST - unsupported request command. {"command":"stepOut","arguments":{"threadId":0},"type":"request","seq":104}
+2021-06-12 17:22:05.213268000000 [24294(ThreadId 13)] ERROR APP - user error (<getModule> loaded module can not find from path. </Users/grahamseamans/classes/adv_functional/project/app/Main.hs> [])
+2021-06-12 17:22:05.245233000000 [24294(ThreadId 13)] ERROR APP - start debugging failed. user error (ExecResult not found.) : Left "user error (ExecResult not found.)"

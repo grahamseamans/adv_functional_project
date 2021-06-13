@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable #-}
+-- {-# LANGUAGE DeriveDataTypeable #-}
 
 module Main where
 
@@ -6,10 +6,11 @@ module Main where
 applying the state monad
 we want the weights matrix to be our state
 then we call evalState to get the return out (return the weights at the end)
-
 --}
 
 -- import Lib
+
+import Control.Monad.Except
 import Control.Monad.State
 import Data.List (transpose)
 import Data.Vector (snoc)
@@ -25,6 +26,10 @@ import Numeric.LinearAlgebra
     (#>),
   )
 import Text.CSV (parseCSVFromFile)
+
+type WeightValue = Matrix Double
+
+type WeightState = Matrix Double
 
 predict ::
   Matrix Double -> -- curried - Weights
@@ -42,33 +47,39 @@ sigmoid :: Double -> Double
 sigmoid x = 1.0 / (1.0 + exp (negate x))
 
 stocTrain ::
-  Matrix Double -> -- w - Weights
   Vector Double -> -- x - Single input vectoror
   Vector Double -> -- l - label
-  Matrix Double -- Trained Weights
-stocTrain w x l = w + delta
-  where
-    error = l - predict w x
-    sigDeriv = error * (1 - error)
-    delta = scale 0.0001 $ error `outer` x
+  State WeightState () -- Weights
+stocTrain x l = do
+  w <- get
+  let error = predict w x - l
+  let sigDeriv = error * cmap (1 -) error
+  let delta = scale 0.01 $ sigDeriv `outer` x
+  let newWeights = w - delta
+  put newWeights
 
 train ::
   Int -> -- t - number of epochs to train on
-  Matrix Double -> -- w - Weights
   [Vector Double] -> -- x - An epoch of inputs
   [Vector Double] -> -- l - An epoch of labels
-  Matrix Double -- Weights
-train t w xs ls
-  | t == 0 = w
-  | otherwise = train (t - 1) (trainEpoch w xs ls) xs ls
+  State WeightState WeightValue -- Monad stuff
+train t xs ls
+  | t == 0 = get
+  | otherwise = do
+    trainEpoch xs ls
+    train (t - 1) xs ls
 
 trainEpoch ::
-  Matrix Double -> -- w - Weights
   [Vector Double] -> -- x - An epoch of inputs
   [Vector Double] -> -- l - An epoch of labels
-  Matrix Double -- Weights
-trainEpoch w (x : xs) (l : ls) = trainEpoch (stocTrain w x l) xs ls
-trainEpoch w [] [] = w
+  State WeightState WeightValue -- Weights
+trainEpoch (x : xs) (l : ls) = do
+  stocTrain x l
+  trainEpoch xs ls
+trainEpoch [] [] = get
+
+-- trainEpoch w (x : xs) (l : ls) = trainEpoch (stocTrain w x l) xs ls
+-- trainEpoch w [] [] = w
 
 test ::
   Matrix Double -> -- w - Weights
@@ -95,15 +106,8 @@ run ::
 run testCSV trainCSV = test w xTest lTest
   where
     (xTest, lTest) = csvToInputsLabels testCSV
-    w = train 1 initW xTrain lTrain
+    w = evalState (train 1 xTrain lTrain) initW
     (xTrain, lTrain) = csvToInputsLabels trainCSV
-    initW = matrix 785 (replicate (785 * 10) 0)
-
-csvToTrainingPred :: [[String]] -> [Vector Double]
-csvToTrainingPred csv = predictEpoch w xs
-  where
-    w = train 1 initW xs ls
-    (xs, ls) = csvToInputsLabels csv
     initW = matrix 785 (replicate (785 * 10) 0)
 
 csvToInputsLabels ::
@@ -129,33 +133,40 @@ oneHotVector x = vector $ replicate int 0 ++ [1] ++ replicate (9 - int) 0
   where
     int = round x
 
+-- main :: IO ()
+-- main = do
+--   testCSV <- parseCSVFromFile "./data/mnist_test_short.csv"
+--   trainCSV <- parseCSVFromFile "./data/mnist_train_short.csv"
+--   runExceptT $ print (run testCSV trainCSV)
+
 main :: IO ()
 main = do
-  -- testCSV <- parseCSVFromFile "./data/mnist_test_short.csv"
-  -- trainCSV <- parseCSVFromFile "./data/mnist_train_short.csv"
-  -- case testCSV of
-  --   Left err -> print err
-  --   Right testCSV ->
-  --     case trainCSV of
-  --       Left err -> print err
-  --       Right trainCSV -> print (run testCSV trainCSV)
+  testCSV <- parseCSVFromFile "./data/mnist_test.csv"
+  trainCSV <- parseCSVFromFile "./data/mnist_train.csv"
+  case testCSV of
+    Left err -> print err
+    Right testCSV ->
+      case trainCSV of
+        Left err -> print err
+        Right trainCSV -> print (run testCSV trainCSV)
 
-  let inputs = map vector [[0, 0, 1], [0, 1, 1], [1, 0, 1], [1, 1, 1]]
-  let labels = map vector [[0, 1], [0, 1], [0, 1], [1, 0]]
-  let weights = matrix 3 (replicate 6 0)
-  print "Initialized Weights"
-  print weights
-  print "target"
-  print labels
-  print "untrained prediction"
-  print $ predictEpoch weights inputs
-  print $ test weights inputs labels
-  let trainedWeights = train 100 weights inputs labels
-  print "trained weights"
-  print trainedWeights
-  print "target"
-  print labels
-  print "trained prediciton"
-  print $ predictEpoch trainedWeights inputs
-  print "Test"
-  print $ test trainedWeights inputs labels
+  -- let inputs = map vector [[0, 0, 1], [0, 1, 1], [1, 0, 1], [1, 1, 1]]
+  -- let labels = map vector [[0, 1], [0, 1], [0, 1], [1, 0]]
+  -- let weights = matrix 3 (replicate 6 0)
+  -- print "Initialized Weights"
+  -- print weights
+  -- print "target"
+  -- print labels
+  -- print "untrained prediction"
+  -- print $ predictEpoch weights inputs
+  -- print $ test weights inputs labels
+  -- let trainedWeights = evalState (train 10 inputs labels) weights
+  -- print "trained weights"
+  -- print trainedWeights
+  -- print "target"
+  -- print labels
+  -- print "trained prediciton"
+  -- print $ predictEpoch trainedWeights inputs
+  -- print "Test"
+  -- print $ test trainedWeights inputs labels
+  print "banana"
